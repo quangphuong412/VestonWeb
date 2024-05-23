@@ -1,0 +1,223 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id          Int       @id @default(autoincrement())
+  usr_email   String    @unique
+  usr_name    String
+  usrname     String    @unique
+  password    String
+  role        Role
+  branch_id   String    @db.Char(5)
+  del_yn      YesNo     @default(N)
+  cre_usr_id  String    @db.Char(10)
+  cre_dt      DateTime  @default(now()) @db.Timestamp(6)
+  upd_usr_id  String    @db.Char(10)
+  upd_dt      DateTime  @updatedAt @db.Timestamp(6)
+  employee    Employee? @relation(fields: [Employee_id], references: [employee_id])
+  Employee_id String?   @unique
+}
+
+model Branch {
+  area_id       String               @db.Char(3)
+  area_nm       String
+  branch_id     String               @db.Char(5)
+  branch_nm     String
+  email         String
+  phone         String
+  address       String
+  del_yn        YesNo                @default(N)
+  cre_usr_id    String               @db.Char(10)
+  cre_dt        DateTime             @default(now()) @db.Timestamp(6)
+  upd_usr_id    String               @db.Char(10)
+  upd_dt        DateTime             @updatedAt @db.Timestamp(6)
+  headoffice_yn YesNo                @default(N)
+  employees     Employee[]
+  warehouse     WarehouseMaster?
+  GoodsInvoice  GoodsInvoiceMaster[]
+
+  @@id([area_id, branch_id])
+}
+
+model Employee {
+  Branch          Branch   @relation(fields: [branchArea_id, branchBranch_id], references: [area_id, branch_id])
+  branchArea_id   String   @db.Char(3)
+  branchBranch_id String   @db.Char(5)
+  imgsrc          String?
+  employee_id     String   @id
+  employee_nm     String
+  position        Position
+  salary          Int
+  email           String?
+  birthday        DateTime
+  del_yn          YesNo    @default(N)
+  gender          Gender
+  address         String
+  phone           String
+  cre_usr_id      String   @db.Char(10)
+  cre_dt          DateTime @default(now()) @db.Timestamp(6)
+  upd_usr_id      String   @db.Char(10)
+  upd_dt          DateTime @updatedAt @db.Timestamp(6)
+  account         Account?
+  accountId       Int?
+}
+
+model Costcode {
+  cost_cd            String               @db.Char(6)
+  cost_nm            String
+  cost_color         String
+  cost_type          String
+  cost_uom           String
+  WarehouseDetail    WarehouseDetail[]
+  cre_usr_id         String               @db.Char(10)
+  cre_dt             DateTime             @default(now()) @db.Timestamp(6)
+  upd_usr_id         String               @db.Char(10)
+  upd_dt             DateTime             @updatedAt @db.Timestamp(6)
+  GoodsInvoiceDetail GoodsInvoiceDetail[]
+  ProductDetail      ProductDetail[]
+
+  @@id([cost_cd])
+}
+
+model WarehouseMaster {
+  warehouse_id    String            @db.Char(10)
+  branch          Branch            @relation(fields: [area_id, branch_id], references: [area_id, branch_id])
+  area_id         String            @db.Char(3)
+  branch_id       String            @db.Char(5)
+  WarehouseDetail WarehouseDetail[]
+  cre_usr_id      String            @db.Char(10)
+  cre_dt          DateTime          @default(now()) @db.Timestamp(6)
+  upd_usr_id      String            @db.Char(10)
+  upd_dt          DateTime          @updatedAt @db.Timestamp(6)
+
+  @@id([warehouse_id])
+  @@unique([area_id, branch_id])
+}
+
+model WarehouseDetail {
+  warehouse_id    String          @db.Char(10)
+  cost_cd         String          @db.Char(6)
+  quantity        Float
+  warehouseMaster WarehouseMaster @relation(fields: [warehouse_id], references: [warehouse_id])
+  costcode        Costcode        @relation(fields: [cost_cd], references: [cost_cd])
+  cre_usr_id      String          @db.Char(10)
+  cre_dt          DateTime        @default(now()) @db.Timestamp(6)
+  upd_usr_id      String          @db.Char(10)
+  upd_dt          DateTime        @updatedAt @db.Timestamp(6)
+
+  @@id([warehouse_id, cost_cd])
+}
+
+model GoodsInvoiceMaster {
+  inv_id             String               @db.Char(10)
+  branch             Branch               @relation(fields: [area_id, branch_id], references: [area_id, branch_id])
+  area_id            String               @db.Char(3)
+  branch_id          String               @db.Char(5)
+  status             Status
+  total_amt          Int
+  goodsInvoiceDetail GoodsInvoiceDetail[]
+  cre_usr_id         String               @db.Char(10)
+  cre_dt             DateTime             @default(now()) @db.Timestamp(6)
+  upd_usr_id         String               @db.Char(10)
+  upd_dt             DateTime             @updatedAt @db.Timestamp(6)
+
+  @@id([inv_id])
+}
+
+model GoodsInvoiceDetail {
+  inv_id             String             @db.Char(10)
+  total_amt          Int
+  cost_cd            String             @db.Char(6)
+  quantity           Float
+  unit_amount        Int
+  cre_usr_id         String             @db.Char(10)
+  cre_dt             DateTime           @default(now()) @db.Timestamp(6)
+  upd_usr_id         String             @db.Char(10)
+  upd_dt             DateTime           @updatedAt @db.Timestamp(6)
+  GoodsInvoiceMaster GoodsInvoiceMaster @relation(fields: [inv_id], references: [inv_id])
+  costcode           Costcode           @relation(fields: [cost_cd], references: [cost_cd])
+
+  @@id([inv_id, cost_cd])
+}
+
+model Product {
+  product_id    String          @db.Char(10)
+  product_name  String
+  description   String
+  category      FashionCategory
+  price         Float?
+  product_img   String
+  cre_usr_id    String          @db.Char(10)
+  cre_dt        DateTime        @default(now()) @db.Timestamp(6)
+  upd_usr_id    String          @db.Char(10)
+  upd_dt        DateTime        @updatedAt @db.Timestamp(6)
+  ProductDetail ProductDetail[]
+
+  @@id([product_id])
+}
+
+model ProductDetail {
+  product_detail_id String   @db.Char(10)
+  product_id        String   @db.Char(10)
+  product           Product  @relation(fields: [product_id], references: [product_id])
+  costcode          Costcode @relation(fields: [cost_cd], references: [cost_cd])
+  cost_cd           String
+  cre_usr_id        String   @db.Char(10)
+  cre_dt            DateTime @default(now()) @db.Timestamp(6)
+  upd_usr_id        String   @db.Char(10)
+  upd_dt            DateTime @updatedAt @db.Timestamp(6)
+
+  @@id([product_detail_id])
+}
+
+enum FashionCategory {
+  VEST
+  SHIRT
+  TROUSERS
+  FABRIC_SAMPLE
+  ACCESSORIES
+}
+
+enum Role {
+  SUPPERADMIN
+}
+
+enum YesNo {
+  Y
+  N
+}
+
+enum Position {
+  RECEPTIONIST
+  SEWINGSTAFF
+  STOREMANAGER
+  SHIPPER
+  SECURITYGUARD
+  BRANCHMANAGER
+  GENERALMANAGER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Status {
+  REQUEST
+  REJECT
+  APPROVE
+  INPROCESS
+  DONE
+}

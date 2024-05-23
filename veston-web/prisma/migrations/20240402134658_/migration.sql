@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Account" ALTER COLUMN "upd_dt" SET DATA TYPE TIMESTAMP(6);
